@@ -1,0 +1,306 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExplanationLength {
+  SHORT
+  NORMAL
+  LONG
+}
+
+enum TeachingStyle {
+  BEGINNER_FRIENDLY
+  BALANCED
+  TECHNICAL
+}
+
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
+enum LessonStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+enum GenerationStatus {
+  STARTED
+  SUCCEEDED
+  FAILED
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String
+  passwordHash      String
+  role              Role                @default(USER)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  settings          UserSettings?
+  sessions          Session[]
+  lessons           DailyLesson[]
+  completions       LessonCompletion[]
+  quizAttempts      QuizAttempt[]
+  topicProgress     UserTopicProgress[]
+  pushSubscriptions PushSubscription[]
+  generationLogs    AiGenerationLog[]
+  configsCreated    LearningConfigVersion[] @relation("ConfigCreator")
+  coursesCreated    Course[]            @relation("CourseCreator")
+  courseRatings     CourseRating[]
+  reminderDeliveries ReminderDelivery[]
+
+  @@index([createdAt])
+}
+
+model UserSettings {
+  id                   String     @id @default(cuid())
+  userId               String     @unique
+  timezone             String     @default("UTC")
+  notificationTime     String     @default("08:00")
+  notificationsEnabled Boolean    @default(false)
+  onboardingCompleted  Boolean    @default(false)
+  difficulty           Difficulty @default(BEGINNER)
+  theme                 Theme      @default(SYSTEM)
+  selectedCourseId      String?
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedCourse        Course?    @relation(fields: [selectedCourseId], references: [id], onDelete: SetNull)
+
+  @@index([selectedCourseId])
+}
+
+model Course {
+  id                    String            @id @default(cuid())
+  slug                  String            @unique
+  title                 String
+  description           String
+  domain                String
+  guidance              String
+  emphasizedTopics      Json
+  avoidedTopics         Json
+  defaultDifficulty     Difficulty        @default(BEGINNER)
+  explanationLength     ExplanationLength @default(NORMAL)
+  teachingStyle         TeachingStyle     @default(BEGINNER_FRIENDLY)
+  additionalGuidance    String?
+  isPublic              Boolean           @default(true)
+  isSystem              Boolean           @default(false)
+  creatorId             String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  creator               User?             @relation("CourseCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  ratings               CourseRating[]
+  selectedBy            UserSettings[]
+  lessons               DailyLesson[]
+
+  @@index([isPublic, createdAt])
+  @@index([creatorId])
+}
+
+model CourseRating {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  score     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([courseId, score])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LearningConfigVersion {
+  id                    String            @id @default(cuid())
+  version               Int               @unique
+  domain                String
+  guidance              String
+  emphasizedTopics      Json
+  avoidedTopics         Json
+  defaultDifficulty     Difficulty        @default(BEGINNER)
+  explanationLength     ExplanationLength @default(NORMAL)
+  teachingStyle         TeachingStyle     @default(BEGINNER_FRIENDLY)
+  additionalGuidance    String?
+  active                 Boolean           @default(false)
+  createdAt              DateTime          @default(now())
+  createdById            String?
+  createdBy              User?             @relation("ConfigCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  lessons                DailyLesson[]
+  generationLogs         AiGenerationLog[]
+
+  @@index([active, createdAt])
+}
+
+model DailyLesson {
+  id                       String         @id @default(cuid())
+  userId                   String
+  localDate                String
+  status                   LessonStatus   @default(GENERATING)
+  title                    String?
+  topicKey                 String?
+  difficulty               Difficulty?
+  estimatedReadingMinutes  Int?
+  introduction             String?
+  concept                  String?
+  howItWorks               String?
+  whyItMatters             String?
+  concreteExample          String?
+  keyTerms                 Json?
+  quizQuestion             String?
+  quizOptions              Json?
+  quizCorrectIndex         Int?
+  quizExplanation          String?
+  prerequisiteTopics       Json?
+  relatedTopics            Json?
+  learningConfigVersionId  String?
+  courseId                  String?
+  aiModel                  String?
+  openedAt                 DateTime?
+  notificationSentAt       DateTime?
+  generatedAt              DateTime?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  user                     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningConfigVersion    LearningConfigVersion? @relation(fields: [learningConfigVersionId], references: [id], onDelete: Restrict)
+  course                    Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  completion               LessonCompletion?
+  quizAttempts             QuizAttempt[]
+  generationLogs           AiGenerationLog[]
+
+  @@unique([userId, localDate])
+  @@index([userId, createdAt])
+  @@index([status, localDate])
+  @@index([topicKey])
+  @@index([courseId])
+}
+
+model LessonCompletion {
+  id          String   @id @default(cuid())
+  lessonId    String   @unique
+  userId      String
+  localDate   String
+  quizCorrect Boolean
+  completedAt DateTime @default(now())
+  lesson      DailyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+  @@index([userId, completedAt])
+}
+
+model QuizAttempt {
+  id            String   @id @default(cuid())
+  lessonId      String
+  userId        String
+  selectedIndex Int
+  correct       Boolean
+  createdAt     DateTime @default(now())
+  lesson        DailyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, userId])
+  @@index([userId, createdAt])
+}
+
+model UserTopicProgress {
+  id             String   @id @default(cuid())
+  userId         String
+  topicKey       String
+  timesCompleted Int      @default(0)
+  correctAnswers Int      @default(0)
+  lastStudiedAt  DateTime
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicKey])
+  @@index([userId, lastStudiedAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AiGenerationLog {
+  id                      String           @id @default(cuid())
+  userId                  String?
+  lessonId                String?
+  learningConfigVersionId String?
+  status                  GenerationStatus
+  model                   String
+  durationMs              Int?
+  inputTokens             Int?
+  outputTokens            Int?
+  errorCode               String?
+  errorMessage            String?
+  attempt                 Int              @default(1)
+  createdAt               DateTime         @default(now())
+  user                    User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lesson                  DailyLesson?     @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  learningConfigVersion   LearningConfigVersion? @relation(fields: [learningConfigVersionId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(1)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
+
+model ReminderDelivery {
+  id        String   @id @default(cuid())
+  userId    String
+  localDate String
+  sentAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDate])
+  @@index([sentAt])
+}

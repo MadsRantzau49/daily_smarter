@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f2ec;
+  --surface: #fcfbf7;
+  --surface-2: #ece9e0;
+  --ink: #17201d;
+  --muted: #65706b;
+  --line: #d9d8d0;
+  --accent: #176b55;
+  --accent-2: #bcefdc;
+  --danger: #a33b35;
+  --shadow: 0 18px 55px rgba(26, 39, 34, 0.08);
+}
+
+[data-theme="dark"] {
+  --bg: #0b100f;
+  --surface: #111816;
+  --surface-2: #19221f;
+  --ink: #ecf4f0;
+  --muted: #98a9a2;
+  --line: #293531;
+  --accent: #79d6b8;
+  --accent-2: #193d32;
+  --danger: #ff9187;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b100f;
+    --surface: #111816;
+    --surface-2: #19221f;
+    --ink: #ecf4f0;
+    --muted: #98a9a2;
+    --line: #293531;
+    --accent: #79d6b8;
+    --accent-2: #193d32;
+    --danger: #ff9187;
+    --shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "ss01", "cv02";
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea,
+select {
+  outline-offset: 3px;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+}
+::selection {
+  background: var(--accent-2);
+}
+
+.display {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.04em;
+}
+.shell {
+  width: min(1180px, calc(100% - 32px));
+  margin-inline: auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.muted {
+  color: var(--muted);
+}
+.btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 20px;
+  cursor: pointer;
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 750;
+  transition:
+    transform 0.18s,
+    opacity 0.18s,
+    background 0.18s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+  transform: none;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+.field {
+  display: grid;
+  gap: 8px;
+}
+.field label,
+.label {
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+.input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 11px 13px;
+}
+textarea.input {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.input:focus {
+  border-color: var(--accent);
+}
+.divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.prose-reading {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.08rem;
+  line-height: 1.85;
+  color: var(--ink);
+}
+.prose-reading p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ember {
+  50% {
+    transform: translateY(-2px) scale(1.06);
+  }
+}
+.enter {
+  animation: rise 0.45s ease both;
+}
+.flame {
+  animation: ember 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
